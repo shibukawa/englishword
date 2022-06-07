@@ -1,0 +1,36 @@
+{
+  "questions": [
+    {
+      "question": "手のひら",
+      "answer": "hand"
+    },
+    {
+      "question": "うで",
+      "answer": "arm"
+    },
+    {
+      "question": "あし(足首より先)",
+      "answer": "foot"
+    },
+    {
+      "question": "あし(全体)",
+      "answer": "leg"
+    },
+    {
+      "question": "口",
+      "answer": "mouth"
+    },
+    {
+      "question": "耳",
+      "answer": "ear"
+    },
+    {
+      "question": "はな",
+      "answer": "nose"
+    },
+    {
+      "question": "あたまをさわって",
+      "answer": "touch your head"
+    }
+  ]
+}
