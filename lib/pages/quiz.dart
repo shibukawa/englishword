@@ -1,7 +1,9 @@
-import 'package:englishword/question.dart';
-import 'package:englishword/result.dart';
-import 'package:englishword/voice.dart';
 import 'package:flutter/material.dart';
+
+import 'package:englishword/question.dart';
+import 'package:englishword/pages/result.dart';
+import 'package:englishword/voice.dart';
+import 'package:englishword/main.dart';
 
 class QuizPage extends StatefulWidget {
   const QuizPage({Key? key, required this.remained, required this.finished, required this.duration}) : super(key: key);
@@ -20,8 +22,9 @@ class QuizPage extends StatefulWidget {
 
 class _QuizPageState extends State<QuizPage> {
   late TextEditingController _controller;
-  var indicator = "";
   var mistake = false;
+  var matchedLength = 0;
+  final List<bool> mistakes = [];
   var finish = false;
   final start = DateTime.now();
   var duration = Duration(seconds: 0);
@@ -29,48 +32,104 @@ class _QuizPageState extends State<QuizPage> {
   @override
   void initState() {
     super.initState();
-    indicator = createIndicator(0);
     _controller = new TextEditingController();
+    for (var i = 0; i < widget.question.answer.length; i++) {
+      mistakes.add(false);
+    }
+  }
+  
+  RichText indicator() {
+    if (finish) {
+      return createAnswerText();
+    } else {
+      return createIndicator();
+    }
   }
 
-  String createIndicator(int count) {
-    var indicatorSrc = [""];
-    for (var i = 0; i < count; i++) {
-      indicatorSrc.add("●");
-    }
-    for (var i = count; i < widget.question.answer.length; i++) {
+  TextSpan indicatorChild(int i, String s, bool finished) {
+    return TextSpan(
+      text: s,
+      style: TextStyle(
+        fontSize: 40,
+        color: mistakes[i] ? Colors.red : finished ? Colors.black : Colors.black26
+      ),
+    );
+  }
+
+  RichText createIndicator() {
+    final spans = <TextSpan>[];
+    for (var i = 0; i < widget.question.answer.length; i++) {
+      final finished = (i < matchedLength);
       if (widget.question.answer[i] == ' ') {
-        indicatorSrc.add("_");
+        spans.add(indicatorChild(i, "_", finished));
+      } else if (widget.question.answer[i] == '.') {
+        spans.add(indicatorChild(i, ".", finished));
+      } else if (widget.question.answer[i] == '?') {
+        spans.add(indicatorChild(i, "?", finished));
       } else {
-        indicatorSrc.add("○");
+        spans.add(indicatorChild(i, finished ? "●" : "○", finished));
       }
     }
-    return indicatorSrc.join();
+    return RichText(
+      text: TextSpan(
+        text: "",
+        style: Theme.of(context).textTheme.headline4,
+        children: spans,
+      )
+    );
+  }
+
+  RichText createAnswerText() {
+    /*final words = widget.question.answer.split(RegExp(r"\s+"));
+    final syllableMatch = RegExp(r"/[^aeiouy]*[aeiouy]+(?:[^aeiouy]*$|[^aeiouy](?=[^aeiouy]))?");
+    for (var word in words) {
+      final syllables = syllableMatch.allMatches(word);
+      print("$word, ${syllables}");
+      for (var i = 0; i < syllables.length; i++) {
+        print("${i}: ${syllables.elementAt(i)}");
+      }
+    }*/
+    final spans = <TextSpan>[];
+    for (var i = 0; i < widget.question.answer.length; i++) {
+      spans.add(indicatorChild(i, widget.question.answer[i], true));
+    }
+
+    return RichText(
+      text: TextSpan(
+        text: "",
+        style: Theme.of(context).textTheme.headline4,
+        children: spans,
+      ),
+    );
+  }
+
+  onFinish() async {
+    setState(() {
+      duration = DateTime.now().difference(start);
+    });
+    final voice = Voice();
+    if (mistake) {
+      await voice.saySpell(widget.question.answer);
+    } else {
+      await voice.say(widget.question.answer);
+    }
+    setState(() {
+      finish = true;
+    });
   }
 
   onChange(String text) async {
     if (widget.question.answer == text) {
-      setState(() {
-        duration = DateTime.now().difference(start);
-        indicator = createIndicator(text.length);
-      });
-      final voice = Voice();
-      if (mistake) {
-        await voice.saySpell(widget.question.answer);
-      } else {
-        await voice.say(widget.question.answer);
-      }
-      setState(() {
-        finish = true;
-      });
+      onFinish();
     } else if (widget.question.answer.startsWith(text)) {
       setState(() {
-        indicator = createIndicator(text.length);
+        matchedLength = text.length;
       });
     } else {
       setState(() {
         mistake = true;
         _controller.text = text.substring(0, text.length-1);
+        mistakes[text.length-1] = true;
         _controller.selection = TextSelection(
           baseOffset: text.length-1,
           extentOffset: text.length-1);
@@ -108,38 +167,43 @@ class _QuizPageState extends State<QuizPage> {
     }
   }
 
+  void returnToTop() {
+    Route route = MaterialPageRoute(builder: (context) => TopPage());
+    Navigator.of(context).pushReplacement(route);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("${widget.finished.length + 1} / ${widget.remained.length + widget.finished.length}"),
+        actions: [
+          IconButton(icon: const Icon(Icons.home), onPressed: returnToTop),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-
           Center(child: Text(
             widget.question.question,
             style: Theme.of(context).textTheme.headline2,
           )),
-          SizedBox(height: 30),
-          Divider(),
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
+          const Divider(),
+          const SizedBox(height: 30),
           Center(
-            child: Text(
-              indicator,
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            child: indicator(),
           ),
           Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: TextField(
               controller: _controller,
               autofocus: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'こたえ',
               ),
+              style: const TextStyle(fontSize: 36.0),
               readOnly: finish,
               onChanged: onChange,
             ),

@@ -1,15 +1,34 @@
-import 'dart:io';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_tts/flutter_tts.dart';
 
 class Voice {
-  late String voice;
+  late FlutterTts flutterTts;
+
+  bool get isIOS => !kIsWeb && Platform.isIOS;
+  bool get isAndroid => !kIsWeb && Platform.isAndroid;
+  bool get isWindows => !kIsWeb && Platform.isWindows;
+  bool get isWeb => kIsWeb;
+
   Voice() {
-    final voices = ["Alex", "Daniel", "Fiona", "Fred", "Karen", "Moira", "Rishi", "Samantha", "Tessa", "Veena", "Victoria"];
-    voices.shuffle();
-    voice = voices.first;
+    flutterTts = FlutterTts();
+    initVoice();
+  }
+
+  initVoice() async {
+    if (isAndroid) {
+      var engine = await flutterTts.getDefaultEngine;
+      if (engine != null) {
+        print(engine);
+      }
+    }
+    await flutterTts.setLanguage("en-US");
+    await flutterTts.setVolume(1.0);
   }
 
   say(String text, {bool slow = false}) async {
-    await Process.run('say', ['-v', voice, '-r', '120', text]);
+    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.speak(text);
   }
 
   saySpell(String text) async {
@@ -17,8 +36,9 @@ class Voice {
       await say(text);
     } else {
       final spell = text.split('').join(" ");
+      await flutterTts.setSpeechRate(0.5);
       for (var i = 0; i < spell.length; i++) {
-        await Process.run('say', ['-v', voice, '-r', '150', spell[i]]);
+        await flutterTts.speak(spell[i]);
       }
       await Future.delayed(const Duration(seconds: 1));
       await say(text);

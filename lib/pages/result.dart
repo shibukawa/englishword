@@ -1,7 +1,8 @@
+import 'package:flutter/material.dart';
+
 import 'package:englishword/question.dart';
 import 'package:englishword/voice.dart';
-import 'package:flutter/material.dart';
-import 'main.dart';
+import 'package:englishword/main.dart';
 
 class ResultPage extends StatelessWidget {
   ResultPage({Key? key, required this.duration, required this.questions}) : super(key: key) {
@@ -36,7 +37,7 @@ class ResultPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () { returnToTop(context); },
-        tooltip: 'Increment',
+        tooltip: 'もどる',
         child: const Icon(Icons.home),
       ),
     );
